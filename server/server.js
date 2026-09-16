@@ -2,13 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const googleTTS = require('google-tts-api');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const HISTORY_FILE = path.join(__dirname, 'history.json');
-const FAVORITES_FILE = path.join(__dirname, 'favorites.json');
+
+// Vercel par file system read-only hota hai, isliye /tmp use karna padta hai
+const isVercel = process.env.VERCEL || process.env.NODE_ENV === 'production';
+const HISTORY_FILE = isVercel ? path.join(os.tmpdir(), 'history.json') : path.join(__dirname, 'history.json');
+const FAVORITES_FILE = isVercel ? path.join(os.tmpdir(), 'favorites.json') : path.join(__dirname, 'favorites.json');
 
 app.use(cors());
 app.use(express.json());
@@ -24,10 +28,14 @@ const getFromFile = (filePath) => {
 };
 
 const saveToFile = (filePath, entry, limit = 20) => {
-  const data = getFromFile(filePath);
-  data.unshift(entry);
-  if (data.length > limit) data.pop();
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  try {
+    const data = getFromFile(filePath);
+    data.unshift(entry);
+    if (data.length > limit) data.pop();
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error('File write error:', err);
+  }
 };
 
 app.get('/api/health', (req, res) => {
@@ -77,7 +85,6 @@ app.post('/api/favorites', (req, res) => {
 
   try {
     const favorites = getFromFile(FAVORITES_FILE);
-    // Avoid duplicate favorites
     if (!favorites.some(f => f.text === text)) {
       saveToFile(FAVORITES_FILE, { text, language, voice, createdAt: new Date().toISOString() }, 50);
     }
@@ -137,7 +144,7 @@ app.post('/api/tts', async (req, res) => {
 });
 
 // Local dev ke liye listen, Vercel production ke liye export
-if (process.env.NODE_ENV !== 'production') {
+if (!isVercel) {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
