@@ -13,8 +13,8 @@ function App() {
   const fetchData = async () => {
     try {
       const [histRes, favRes] = await Promise.all([
-        fetch('http://localhost:5000/api/history'),
-        fetch('http://localhost:5000/api/favorites')
+        fetch('/api/history'),
+        fetch('/api/favorites')
       ]);
       const histData = await histRes.json();
       const favData = await favRes.json();
@@ -41,7 +41,7 @@ function App() {
     setAudioUrl('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/tts', {
+      const response = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language, voice: language === 'hi' ? 'Hindi Female' : 'English Female' })
@@ -61,7 +61,7 @@ function App() {
 
   const handleClearHistory = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/history', { method: 'DELETE' });
+      const res = await fetch('/api/history', { method: 'DELETE' });
       const data = await res.json();
       if (data.success) setHistory([]);
     } catch (err) {
@@ -71,7 +71,7 @@ function App() {
 
   const handleClearFavorites = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/favorites', { method: 'DELETE' });
+      const res = await fetch('/api/favorites', { method: 'DELETE' });
       const data = await res.json();
       if (data.success) setFavorites([]);
     } catch (err) {
@@ -79,20 +79,16 @@ function App() {
     }
   };
 
-  // Toggle favorite (Add or Remove)
   const toggleFavorite = async (item, e) => {
     e.stopPropagation();
     const exists = favorites.some(f => f.text === item.text);
 
     if (exists) {
-      // Remove from favorites by filtering out
       const updatedFavorites = favorites.filter(f => f.text !== item.text);
       setFavorites(updatedFavorites);
-      // Optional sync with backend/local storage if required, or clear-all/re-save
-      // Here we can re-save the updated array or handle it via backend endpoint if needed.
     } else {
       try {
-        const res = await fetch('http://localhost:5000/api/favorites', {
+        const res = await fetch('/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: item.text, language: item.language, voice: item.voice })
@@ -317,6 +313,3 @@ function App() {
 }
 
 export default App;
-
-
-
